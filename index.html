@@ -1,0 +1,688 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Australian Change Calculator</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    :root {
+      --bg-primary: #ffffff;
+      --bg-secondary: #f5f5f3;
+      --bg-tertiary: #eeecea;
+      --text-primary: #1a1a18;
+      --text-secondary: #6b6b67;
+      --border-light: rgba(0,0,0,0.12);
+      --border-medium: rgba(0,0,0,0.22);
+      --success-bg: #e6f9f0;
+      --success-border: #9fe1cb;
+      --success-text: #085041;
+      --success-accent: #0f6e56;
+      --error-bg: #fff0f0;
+      --error-border: #f7c1c1;
+      --error-text: #a32d2d;
+      --radius-sm: 8px;
+      --radius-md: 10px;
+      --radius-lg: 14px;
+      --radius-xl: 18px;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg-primary: #1e1e1c;
+        --bg-secondary: #2a2a27;
+        --bg-tertiary: #333330;
+        --text-primary: #f0ede8;
+        --text-secondary: #999990;
+        --border-light: rgba(255,255,255,0.1);
+        --border-medium: rgba(255,255,255,0.18);
+        --success-bg: #0d3326;
+        --success-border: #1d6e56;
+        --success-text: #9fe1cb;
+        --success-accent: #5dcaa5;
+        --error-bg: #3a1515;
+        --error-border: #7a2d2d;
+        --error-text: #f09595;
+      }
+    }
+
+    body {
+      font-family: 'Lexend', sans-serif;
+      font-size: 16px;
+      color: var(--text-primary);
+      background: var(--bg-tertiary);
+      min-height: 100vh;
+      padding: 2rem 1rem 4rem;
+      line-height: 1.5;
+    }
+
+    #app {
+      max-width: 820px;
+      margin: 0 auto;
+    }
+
+    /* ── Header ── */
+    .header {
+      text-align: center;
+      margin-bottom: 2.5rem;
+    }
+    .header-icon {
+      font-size: 40px;
+      margin-bottom: 10px;
+      display: block;
+    }
+    .header h1 {
+      font-size: 30px;
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+    .header p {
+      font-size: 16px;
+      color: var(--text-secondary);
+    }
+
+    /* ── Cards ── */
+    .card {
+      background: var(--bg-primary);
+      border: 0.5px solid var(--border-light);
+      border-radius: var(--radius-lg);
+      padding: 1.25rem;
+    }
+
+    .input-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin-bottom: 1rem;
+    }
+    @media (max-width: 520px) {
+      .input-grid { grid-template-columns: 1fr; }
+    }
+
+    .input-label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-secondary);
+      margin-bottom: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .input-label span { font-size: 18px; }
+
+    .input-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .dollar-sign {
+      font-size: 24px;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+    .money-input {
+      width: 100%;
+      font-family: 'Lexend', sans-serif;
+      font-size: 28px;
+      font-weight: 600;
+      border: none;
+      background: transparent;
+      color: var(--text-primary);
+      outline: none;
+    }
+    .money-input::placeholder { color: var(--text-secondary); opacity: 0.5; }
+    .money-input::-webkit-outer-spin-button,
+    .money-input::-webkit-inner-spin-button { -webkit-appearance: none; }
+    .money-input[type=number] { -moz-appearance: textfield; }
+    .money-input.error { outline: 2px solid #e24b4a; border-radius: 4px; }
+
+    /* ── Rounded note ── */
+    .rounded-note {
+      display: none;
+      background: var(--bg-secondary);
+      border-radius: var(--radius-sm);
+      padding: 10px 14px;
+      font-size: 13px;
+      color: var(--text-secondary);
+      text-align: center;
+      margin-bottom: 1rem;
+    }
+
+    /* ── Error box ── */
+    .error-box {
+      display: none;
+      background: var(--error-bg);
+      border: 1.5px solid var(--error-border);
+      border-radius: var(--radius-lg);
+      padding: 14px 18px;
+      margin-bottom: 1.5rem;
+      align-items: center;
+      gap: 12px;
+    }
+    .error-box span { font-size: 26px; }
+    .error-box p {
+      font-size: 16px;
+      font-weight: 500;
+      color: var(--error-text);
+    }
+
+    /* ── Result section ── */
+    #result-section { display: none; }
+
+    .change-hero {
+      background: var(--success-bg);
+      border: 1.5px solid var(--success-border);
+      border-radius: var(--radius-xl);
+      padding: 1.75rem;
+      text-align: center;
+      margin-bottom: 1.5rem;
+    }
+    .change-hero-label {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--success-accent);
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+    .change-hero-amount {
+      font-size: 52px;
+      font-weight: 700;
+      color: var(--success-text);
+      line-height: 1;
+    }
+
+    /* ── Breakdown header ── */
+    .breakdown-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1rem;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    .breakdown-title {
+      font-size: 16px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .mode-toggle {
+      display: flex;
+      background: var(--bg-secondary);
+      border-radius: var(--radius-sm);
+      padding: 3px;
+      gap: 3px;
+    }
+    .mode-btn {
+      font-family: 'Lexend', sans-serif;
+      font-size: 13px;
+      font-weight: 500;
+      padding: 7px 14px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background 0.15s, color 0.15s;
+    }
+    .mode-btn.active {
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    }
+    .mode-btn.inactive {
+      background: transparent;
+      color: var(--text-secondary);
+    }
+
+    /* ── Breakdown list ── */
+    #breakdown { margin-bottom: 1.5rem; }
+    .breakdown-list { display: flex; flex-direction: column; gap: 8px; }
+    .breakdown-item {
+      background: var(--bg-primary);
+      border: 0.5px solid var(--border-light);
+      border-radius: var(--radius-md);
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+    .breakdown-item-icon { display: flex; align-items: center; flex-shrink: 0; }
+    .breakdown-item-text { flex: 1; }
+    .breakdown-item-name {
+      font-size: 19px;
+      font-weight: 600;
+    }
+    .breakdown-item-type {
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text-secondary);
+      margin-left: 8px;
+    }
+    .breakdown-item-value {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--text-secondary);
+    }
+
+    /* Visual mode */
+    .visual-group {
+      background: var(--bg-primary);
+      border: 0.5px solid var(--border-light);
+      border-radius: var(--radius-md);
+      padding: 14px 16px;
+      margin-bottom: 8px;
+    }
+    .visual-group-label {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-secondary);
+      margin-bottom: 10px;
+    }
+    .visual-items {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+    }
+
+    /* ── Count back button ── */
+    .count-back-btn {
+      font-family: 'Lexend', sans-serif;
+      font-size: 16px;
+      font-weight: 600;
+      padding: 15px 20px;
+      border-radius: var(--radius-lg);
+      border: 1.5px solid var(--border-medium);
+      cursor: pointer;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      transition: background 0.15s;
+      margin-bottom: 1rem;
+    }
+    .count-back-btn:hover { background: var(--bg-secondary); }
+
+    /* ── Count back steps ── */
+    #count-back {
+      display: none;
+      background: var(--bg-primary);
+      border: 0.5px solid var(--border-light);
+      border-radius: var(--radius-lg);
+      padding: 1.25rem;
+    }
+    .count-back-heading {
+      font-size: 16px;
+      font-weight: 600;
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .step-list { display: flex; flex-direction: column; }
+    .step-item {
+      display: flex;
+      gap: 14px;
+      padding: 11px 0;
+    }
+    .step-item:not(:last-child) {
+      border-bottom: 0.5px solid var(--border-light);
+    }
+    .step-icon { font-size: 20px; min-width: 28px; }
+    .step-text {
+      font-size: 15px;
+      line-height: 1.65;
+      color: var(--text-primary);
+    }
+    .step-text strong { font-weight: 600; }
+
+    /* ── No change message ── */
+    .no-change {
+      color: var(--text-secondary);
+      text-align: center;
+      padding: 1.5rem;
+      font-size: 16px;
+    }
+
+    /* ── SVG coin / note helpers ── */
+    svg { display: block; }
+  </style>
+</head>
+<body>
+
+<div id="app">
+
+  <div class="header">
+    <span class="header-icon">&#x1F4B5;</span>
+    <h1>Change Calculator</h1>
+    <p>Easy money counting &mdash; no stress, no rush</p>
+  </div>
+
+  <!-- Inputs -->
+  <div class="input-grid">
+    <div class="card">
+      <div class="input-label">
+        <span>&#x1F3F7;&#xFE0F;</span> Price to pay
+      </div>
+      <div class="input-row">
+        <span class="dollar-sign">$</span>
+        <input id="price" class="money-input" type="number" min="0" step="0.01" placeholder="0.00" oninput="calculate()">
+      </div>
+    </div>
+    <div class="card">
+      <div class="input-label">
+        <span>&#x1F91A;</span> Money given
+      </div>
+      <div class="input-row">
+        <span class="dollar-sign">$</span>
+        <input id="handed" class="money-input" type="number" min="0" step="0.01" placeholder="0.00" oninput="calculate()">
+      </div>
+    </div>
+  </div>
+
+  <!-- Rounding note -->
+  <div id="rounded-note" class="rounded-note"></div>
+
+  <!-- Error -->
+  <div id="error-box" class="error-box">
+    <span>&#x1F49B;</span>
+    <p>Need more money. Add a little more to cover the price.</p>
+  </div>
+
+  <!-- Result -->
+  <div id="result-section">
+
+    <div class="change-hero">
+      <div class="change-hero-label">
+        <span>&#x1F3AF;</span> Give this change back
+      </div>
+      <div id="change-amount" class="change-hero-amount"></div>
+    </div>
+
+    <div class="breakdown-header">
+      <div class="breakdown-title">
+        <span>&#x1FA99;</span> Change breakdown
+      </div>
+      <div class="mode-toggle">
+        <button id="btn-summary" class="mode-btn active" onclick="setMode('summary')">
+          &#x1F4CB; Summary
+        </button>
+        <button id="btn-visual" class="mode-btn inactive" onclick="setMode('visual')">
+          &#x1F441;&#xFE0F; Visual
+        </button>
+      </div>
+    </div>
+
+    <div id="breakdown"></div>
+
+    <button class="count-back-btn" onclick="toggleCountBack()">
+      <span>&#x1F9EE;</span>
+      <span id="count-back-label">Show me how to count it</span>
+    </button>
+
+    <div id="count-back"></div>
+
+  </div>
+</div>
+
+<script>
+  // ── State ──────────────────────────────────────────────
+  let mode = 'summary';
+  let countBackOpen = false;
+
+  // ── Denominations ──────────────────────────────────────
+  const DENOMINATIONS = [
+    { value: 10000, label: '$100', type: 'note',   color: '#2E7D32', textColor: '#fff' },
+    { value:  5000, label: '$50',  type: 'note',   color: '#F9A825', textColor: '#333' },
+    { value:  2000, label: '$20',  type: 'note',   color: '#BF360C', textColor: '#fff' },
+    { value:  1000, label: '$10',  type: 'note',   color: '#1565C0', textColor: '#fff' },
+    { value:   500, label: '$5',   type: 'note',   color: '#AD1457', textColor: '#fff' },
+    { value:   200, label: '$2',   type: 'coin',   size: 36,  color: '#B8860B', textColor: '#fff' },
+    { value:   100, label: '$1',   type: 'coin',   size: 44,  color: '#DAA520', textColor: '#fff' },
+    { value:    50, label: '50c',  type: 'coin50c', size: 52, color: '#C0C0C0', textColor: '#333' },
+    { value:    20, label: '20c',  type: 'coin',   size: 32,  color: '#A9A9A9', textColor: '#fff' },
+    { value:    10, label: '10c',  type: 'coin',   size: 28,  color: '#A9A9A9', textColor: '#fff' },
+    { value:     5, label: '5c',   type: 'coin',   size: 24,  color: '#A9A9A9', textColor: '#fff' },
+  ];
+
+  // ── Swedish (Australian) Rounding ──────────────────────
+  function swedishRound(cents) {
+    const r = cents % 5;
+    if (r <= 2) return cents - r;
+    return cents + (5 - r);
+  }
+
+  // ── Main calculate ─────────────────────────────────────
+  function calculate() {
+    const pRaw   = parseFloat(document.getElementById('price').value)  || 0;
+    const hRaw   = parseFloat(document.getElementById('handed').value) || 0;
+    const pCents = Math.round(pRaw * 100);
+    const hCents = Math.round(hRaw * 100);
+    const rounded = swedishRound(pCents);
+    const change  = hCents - rounded;
+
+    const noteEl  = document.getElementById('rounded-note');
+    const errEl   = document.getElementById('error-box');
+    const resEl   = document.getElementById('result-section');
+    const handedEl = document.getElementById('handed');
+
+    if (pRaw <= 0) {
+      noteEl.style.display = 'none';
+      errEl.style.display  = 'none';
+      resEl.style.display  = 'none';
+      return;
+    }
+
+    // Rounding note
+    if (rounded !== pCents) {
+      noteEl.style.display = 'block';
+      noteEl.textContent   = 'Price rounded to nearest 5c: $' + (rounded / 100).toFixed(2);
+    } else {
+      noteEl.style.display = 'none';
+    }
+
+    // Not enough money
+    if (hRaw > 0 && hCents < rounded) {
+      errEl.style.display  = 'flex';
+      resEl.style.display  = 'none';
+      handedEl.classList.add('error');
+      return;
+    }
+    handedEl.classList.remove('error');
+    errEl.style.display = 'none';
+
+    if (hRaw <= 0) {
+      resEl.style.display = 'none';
+      return;
+    }
+
+    resEl.style.display = 'block';
+    document.getElementById('change-amount').textContent = '$' + (change / 100).toFixed(2);
+
+    const breakdown = getBreakdown(change);
+    renderBreakdown(breakdown);
+    if (countBackOpen) renderCountBack(rounded, hCents);
+  }
+
+  // ── Build denomination breakdown ───────────────────────
+  function getBreakdown(cents) {
+    const items = [];
+    let rem = cents;
+    for (const d of DENOMINATIONS) {
+      if (rem >= d.value) {
+        const count = Math.floor(rem / d.value);
+        items.push({ ...d, count });
+        rem -= count * d.value;
+      }
+    }
+    return items;
+  }
+
+  // ── SVG Renderers ──────────────────────────────────────
+  function renderCoinSVG(d, size) {
+    const s = size || d.size;
+    if (d.type === 'coin50c') {
+      const cx = s / 2, cy = s / 2, r = s * 0.44;
+      const pts = [];
+      for (let i = 0; i < 6; i++) {
+        const a = (i * 60 - 90) * Math.PI / 180;
+        pts.push((cx + r * Math.cos(a)).toFixed(2) + ',' + (cy + r * Math.sin(a)).toFixed(2));
+      }
+      return `<svg width="${s}" height="${s}" viewBox="0 0 ${s} ${s}" aria-hidden="true">
+        <polygon points="${pts.join(' ')}" fill="${d.color}" stroke="#999" stroke-width="1"/>
+        <text x="${cx}" y="${cy + 4}" text-anchor="middle" font-family="Lexend,sans-serif"
+          font-size="${(s * 0.22).toFixed(1)}" font-weight="600" fill="${d.textColor}">${d.label}</text>
+      </svg>`;
+    }
+    // Regular round coin
+    const c = s / 2;
+    return `<svg width="${s}" height="${s}" viewBox="0 0 ${s} ${s}" aria-hidden="true">
+      <circle cx="${c}" cy="${c}" r="${c - 1}" fill="${d.color}" stroke="#999" stroke-width="1"/>
+      <text x="${c}" y="${c + 4}" text-anchor="middle" font-family="Lexend,sans-serif"
+        font-size="${(s * 0.22).toFixed(1)}" font-weight="600" fill="${d.textColor}">${d.label}</text>
+    </svg>`;
+  }
+
+  function renderNoteSVG(d, w, h) {
+    return `<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" style="border-radius:4px" aria-hidden="true">
+      <rect width="${w}" height="${h}" rx="4" fill="${d.color}"/>
+      <rect x="4" y="4" width="${w - 8}" height="${h - 8}" rx="3"
+        fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="1"/>
+      <text x="${w / 2}" y="${h / 2 + 6}" text-anchor="middle" font-family="Lexend,sans-serif"
+        font-size="${(h * 0.38).toFixed(1)}" font-weight="700" fill="${d.textColor}">${d.label}</text>
+    </svg>`;
+  }
+
+  // ── Render breakdown panel ─────────────────────────────
+  function renderBreakdown(items) {
+    const el = document.getElementById('breakdown');
+    if (!items.length) {
+      el.innerHTML = '<p class="no-change">No change needed — exact amount! &#x2705;</p>';
+      return;
+    }
+
+    if (mode === 'summary') {
+      let html = '<div class="breakdown-list">';
+      for (const d of items) {
+        const icon = d.type === 'note'
+          ? renderNoteSVG(d, 60, 34)
+          : renderCoinSVG(d);
+        const typeLabel = d.type === 'note' ? 'note' : 'coin';
+        const total = '$' + ((d.count * d.value) / 100).toFixed(2);
+        html += `<div class="breakdown-item">
+          <div class="breakdown-item-icon">${icon}</div>
+          <div class="breakdown-item-text">
+            <span class="breakdown-item-name">${d.count} &times; ${d.label}</span>
+            <span class="breakdown-item-type">${typeLabel}</span>
+          </div>
+          <span class="breakdown-item-value">= ${total}</span>
+        </div>`;
+      }
+      html += '</div>';
+      el.innerHTML = html;
+
+    } else {
+      // Visual mode — render individual pieces
+      let html = '';
+      for (const d of items) {
+        let pieces = '';
+        for (let i = 0; i < d.count; i++) {
+          pieces += '<div>' + (d.type === 'note' ? renderNoteSVG(d, 88, 50) : renderCoinSVG(d)) + '</div>';
+        }
+        html += `<div class="visual-group">
+          <div class="visual-group-label">${d.count} &times; ${d.label}</div>
+          <div class="visual-items">${pieces}</div>
+        </div>`;
+      }
+      el.innerHTML = html;
+    }
+  }
+
+  // ── Mode toggle ────────────────────────────────────────
+  function setMode(m) {
+    mode = m;
+    document.getElementById('btn-summary').className = 'mode-btn ' + (m === 'summary' ? 'active' : 'inactive');
+    document.getElementById('btn-visual').className  = 'mode-btn ' + (m === 'visual'  ? 'active' : 'inactive');
+    const pRaw = parseFloat(document.getElementById('price').value) || 0;
+    if (pRaw > 0) calculate();
+  }
+
+  // ── Count back toggle ──────────────────────────────────
+  function toggleCountBack() {
+    countBackOpen = !countBackOpen;
+    document.getElementById('count-back-label').textContent =
+      countBackOpen ? 'Hide counting steps' : 'Show me how to count it';
+    const el = document.getElementById('count-back');
+    el.style.display = countBackOpen ? 'block' : 'none';
+    if (countBackOpen) {
+      const pRaw   = parseFloat(document.getElementById('price').value)  || 0;
+      const hRaw   = parseFloat(document.getElementById('handed').value) || 0;
+      const pCents = Math.round(pRaw * 100);
+      const hCents = Math.round(hRaw * 100);
+      const rounded = swedishRound(pCents);
+      renderCountBack(rounded, hCents);
+    }
+  }
+
+  // ── Count back renderer ────────────────────────────────
+  function renderCountBack(fromCents, toCents) {
+    const el = document.getElementById('count-back');
+    if (!countBackOpen) return;
+
+    const steps = [];
+    let cur = fromCents;
+    steps.push({
+      icon: '&#x1F3F7;&#xFE0F;',
+      text: `Start at <strong>$${(cur / 100).toFixed(2)}</strong> &mdash; that's the price to cover.`
+    });
+
+    let rem = toCents - cur;
+    for (const d of DENOMINATIONS) {
+      while (rem >= d.value) {
+        cur += d.value;
+        rem -= d.value;
+        const typeWord = d.type === 'note' ? 'note' : 'coin';
+        steps.push({
+          icon: d.type === 'note' ? '&#x1F4B5;' : '&#x1FA99;',
+          text: `Hand over a <strong>${d.label} ${typeWord}</strong> &rarr; now at <strong>$${(cur / 100).toFixed(2)}</strong>`
+        });
+      }
+    }
+    steps.push({
+      icon: '&#x2705;',
+      text: `Reached <strong>$${(toCents / 100).toFixed(2)}</strong> &mdash; that's what was handed over!`
+    });
+
+    let html = `<div class="count-back-heading">&#x1F9EE; How to count the change</div>
+    <div class="step-list">`;
+    steps.forEach(s => {
+      html += `<div class="step-item">
+        <span class="step-icon">${s.icon}</span>
+        <p class="step-text">${s.text}</p>
+      </div>`;
+    });
+    html += '</div>';
+    el.innerHTML = html;
+  }
+</script>
+
+</body>
+</html>
