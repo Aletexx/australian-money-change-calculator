@@ -1,0 +1,295 @@
+
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700&display=swap');
+*{box-sizing:border-box;margin:0;padding:0}
+body,#app{font-family:'Lexend',sans-serif;font-size:16px;color:var(--color-text-primary)}
+input[type=number]{-moz-appearance:textfield}
+input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border-width:0}
+</style>
+
+<h2 class="sr-only">Australian Money Change Calculator — a dyscalculia-friendly tool for calculating cash change</h2>
+
+<div id="app" style="max-width:820px;margin:0 auto;padding:1.5rem 1rem 3rem">
+
+  <div style="text-align:center;margin-bottom:2rem">
+    <div style="font-size:32px;margin-bottom:8px">💵</div>
+    <h1 style="font-size:28px;font-weight:700;margin-bottom:6px">Change Calculator</h1>
+    <p style="font-size:16px;color:var(--color-text-secondary)">Easy money counting — no stress, no rush</p>
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1.5rem">
+
+    <div style="background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:12px;padding:1.25rem">
+      <label style="display:flex;align-items:center;gap:8px;font-size:13px;font-weight:500;color:var(--color-text-secondary);margin-bottom:10px">
+        <span style="font-size:18px">🏷️</span> PRICE TO PAY
+      </label>
+      <div style="display:flex;align-items:center;gap:6px">
+        <span style="font-size:22px;font-weight:600">$</span>
+        <input id="price" type="number" min="0" step="0.01" placeholder="0.00"
+          style="width:100%;font-family:Lexend,sans-serif;font-size:26px;font-weight:600;border:none;background:transparent;color:var(--color-text-primary);outline:none"
+          oninput="calculate()">
+      </div>
+    </div>
+
+    <div style="background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:12px;padding:1.25rem">
+      <label style="display:flex;align-items:center;gap:8px;font-size:13px;font-weight:500;color:var(--color-text-secondary);margin-bottom:10px">
+        <span style="font-size:18px">🤲</span> MONEY GIVEN
+      </label>
+      <div style="display:flex;align-items:center;gap:6px">
+        <span style="font-size:22px;font-weight:600">$</span>
+        <input id="handed" type="number" min="0" step="0.01" placeholder="0.00" id="handed"
+          style="width:100%;font-family:Lexend,sans-serif;font-size:26px;font-weight:600;border:none;background:transparent;color:var(--color-text-primary);outline:none"
+          oninput="calculate()">
+      </div>
+    </div>
+  </div>
+
+  <div id="rounded-note" style="display:none;background:var(--color-background-secondary);border-radius:10px;padding:10px 14px;font-size:13px;color:var(--color-text-secondary);margin-bottom:1rem;text-align:center"></div>
+
+  <div id="error-box" style="display:none;background:#FFF0F0;border:1.5px solid #F7C1C1;border-radius:12px;padding:14px 18px;margin-bottom:1.5rem;display:none;align-items:center;gap:10px">
+    <span style="font-size:24px">💛</span>
+    <p style="font-size:16px;font-weight:500;color:#A32D2D">Need more money. Add a little more to cover the price.</p>
+  </div>
+
+  <div id="result-section" style="display:none">
+
+    <div style="background:linear-gradient(135deg,#E6F9F0,#D0F0E0);border:1.5px solid #9FE1CB;border-radius:16px;padding:1.5rem;margin-bottom:1.5rem;text-align:center">
+      <p style="font-size:14px;font-weight:500;color:#0F6E56;margin-bottom:6px;display:flex;align-items:center;justify-content:center;gap:6px">
+        <span>🎯</span> GIVE THIS CHANGE BACK
+      </p>
+      <p id="change-amount" style="font-size:48px;font-weight:700;color:#085041;line-height:1"></p>
+    </div>
+
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;flex-wrap:wrap;gap:8px">
+      <p style="font-size:15px;font-weight:600;color:var(--color-text-primary);display:flex;align-items:center;gap:6px">
+        <span>🪙</span> Change breakdown
+      </p>
+      <div style="display:flex;background:var(--color-background-secondary);border-radius:8px;padding:3px;gap:3px">
+        <button id="btn-summary" onclick="setMode('summary')"
+          style="font-family:Lexend,sans-serif;font-size:13px;font-weight:500;padding:6px 12px;border:none;border-radius:6px;cursor:pointer;background:var(--color-background-primary);color:var(--color-text-primary)">
+          📋 Summary
+        </button>
+        <button id="btn-visual" onclick="setMode('visual')"
+          style="font-family:Lexend,sans-serif;font-size:13px;font-weight:500;padding:6px 12px;border:none;border-radius:6px;cursor:pointer;background:transparent;color:var(--color-text-secondary)">
+          👁️ Visual
+        </button>
+      </div>
+    </div>
+
+    <div id="breakdown" style="margin-bottom:1.5rem"></div>
+
+    <button onclick="toggleCountBack()"
+      style="font-family:Lexend,sans-serif;font-size:15px;font-weight:600;padding:14px 20px;border-radius:12px;border:1.5px solid var(--color-border-secondary);cursor:pointer;background:var(--color-background-primary);color:var(--color-text-primary);width:100%;display:flex;align-items:center;justify-content:center;gap:8px">
+      <span>🧮</span> <span id="count-back-label">Show me how to count it</span>
+    </button>
+
+    <div id="count-back" style="display:none;margin-top:1rem;background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:12px;padding:1.25rem"></div>
+
+  </div>
+</div>
+
+<script>
+let mode='summary',countBackOpen=false;
+
+const DENOMINATIONS=[
+  {value:10000,label:'$100',type:'note',color:'#2E7D32',textColor:'#fff',emoji:'💵'},
+  {value:5000,label:'$50',type:'note',color:'#F9A825',textColor:'#333',emoji:'💵'},
+  {value:2000,label:'$20',type:'note',color:'#BF360C',textColor:'#fff',emoji:'💵'},
+  {value:1000,label:'$10',type:'note',color:'#1565C0',textColor:'#fff',emoji:'💵'},
+  {value:500,label:'$5',type:'note',color:'#AD1457',textColor:'#fff',emoji:'💵'},
+  {value:200,label:'$2',type:'coin',size:36,color:'#B8860B',textColor:'#fff'},
+  {value:100,label:'$1',type:'coin',size:44,color:'#DAA520',textColor:'#fff'},
+  {value:50,label:'50¢',type:'coin50c',size:52,color:'#C0C0C0',textColor:'#333'},
+  {value:20,label:'20¢',type:'coin',size:32,color:'#A9A9A9',textColor:'#fff'},
+  {value:10,label:'10¢',type:'coin',size:28,color:'#A9A9A9',textColor:'#fff'},
+  {value:5,label:'5¢',type:'coin',size:24,color:'#A9A9A9',textColor:'#fff'},
+];
+
+function swedishRound(cents){
+  const r=cents%5;
+  if(r<=2)return cents-r;
+  return cents+(5-r);
+}
+
+function calculate(){
+  const pRaw=parseFloat(document.getElementById('price').value)||0;
+  const hRaw=parseFloat(document.getElementById('handed').value)||0;
+  const pCents=Math.round(pRaw*100);
+  const hCents=Math.round(hRaw*100);
+  const rounded=swedishRound(pCents);
+  const change=hCents-rounded;
+
+  const note=document.getElementById('rounded-note');
+  const err=document.getElementById('error-box');
+  const res=document.getElementById('result-section');
+
+  if(pRaw<=0){note.style.display='none';err.style.display='none';res.style.display='none';return;}
+
+  if(rounded!==pCents){
+    note.style.display='block';
+    note.textContent=`Price rounded to nearest 5¢: $${(rounded/100).toFixed(2)}`;
+  }else{note.style.display='none';}
+
+  if(hCents<rounded&&hRaw>0){
+    err.style.display='flex';res.style.display='none';
+    document.getElementById('handed').style.outline='2px solid #E24B4A';
+    return;
+  }
+  document.getElementById('handed').style.outline='none';
+  err.style.display='none';
+
+  if(hRaw<=0){res.style.display='none';return;}
+
+  res.style.display='block';
+  document.getElementById('change-amount').textContent='$'+(change/100).toFixed(2);
+
+  const breakdown=getBreakdown(change);
+  renderBreakdown(breakdown);
+  if(countBackOpen)renderCountBack(rounded,hCents);
+}
+
+function getBreakdown(cents){
+  const items=[];
+  let rem=cents;
+  for(const d of DENOMINATIONS){
+    if(rem>=d.value){
+      const count=Math.floor(rem/d.value);
+      items.push({...d,count});
+      rem-=count*d.value;
+    }
+  }
+  return items;
+}
+
+function setMode(m){
+  mode=m;
+  document.getElementById('btn-summary').style.background=m==='summary'?'var(--color-background-primary)':'transparent';
+  document.getElementById('btn-summary').style.color=m==='summary'?'var(--color-text-primary)':'var(--color-text-secondary)';
+  document.getElementById('btn-visual').style.background=m==='visual'?'var(--color-background-primary)':'transparent';
+  document.getElementById('btn-visual').style.color=m==='visual'?'var(--color-text-primary)':'var(--color-text-secondary)';
+  const pRaw=parseFloat(document.getElementById('price').value)||0;
+  if(pRaw>0)calculate();
+}
+
+function renderCoin(d,size){
+  if(d.type==='coin50c'){
+    const s=size||d.size;
+    const cx=s/2,cy=s/2,r=s*0.44;
+    const pts=[];
+    for(let i=0;i<6;i++){
+      const a=(i*60-90)*Math.PI/180;
+      pts.push(`${cx+r*Math.cos(a)},${cy+r*Math.sin(a)}`);
+    }
+    return `<svg width="${s}" height="${s}" viewBox="0 0 ${s} ${s}"><polygon points="${pts.join(' ')}" fill="${d.color}" stroke="#999" stroke-width="1"/><text x="${cx}" y="${cy+4}" text-anchor="middle" font-family="Lexend,sans-serif" font-size="${s*0.22}" font-weight="600" fill="${d.textColor}">${d.label}</text></svg>`;
+  }
+  if(d.type==='coin'){
+    const s=size||d.size;
+    const c=s/2;
+    return `<svg width="${s}" height="${s}" viewBox="0 0 ${s} ${s}"><circle cx="${c}" cy="${c}" r="${c-1}" fill="${d.color}" stroke="#999" stroke-width="1"/><text x="${c}" y="${c+4}" text-anchor="middle" font-family="Lexend,sans-serif" font-size="${s*0.22}" font-weight="600" fill="${d.textColor}">${d.label}</text></svg>`;
+  }
+  return '';
+}
+
+function renderNote(d,w,h){
+  return `<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" style="border-radius:4px">
+    <rect width="${w}" height="${h}" rx="4" fill="${d.color}"/>
+    <rect x="4" y="4" width="${w-8}" height="${h-8}" rx="3" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="1"/>
+    <text x="${w/2}" y="${h/2+6}" text-anchor="middle" font-family="Lexend,sans-serif" font-size="${h*0.38}" font-weight="700" fill="${d.textColor}">${d.label}</text>
+  </svg>`;
+}
+
+function renderBreakdown(items){
+  const el=document.getElementById('breakdown');
+  if(!items.length){el.innerHTML='<p style="color:var(--color-text-secondary);text-align:center;padding:1rem">No change needed — exact amount!</p>';return;}
+
+  if(mode==='summary'){
+    let html='<div style="display:flex;flex-direction:column;gap:8px">';
+    for(const d of items){
+      let icon='';
+      if(d.type==='note'){
+        icon=renderNote(d,56,32);
+      }else{
+        icon=renderCoin(d);
+      }
+      html+=`<div style="background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:10px;padding:12px 16px;display:flex;align-items:center;gap:12px">
+        <div style="display:flex;align-items:center">${icon}</div>
+        <div style="flex:1">
+          <span style="font-size:18px;font-weight:600">${d.count} × ${d.label}</span>
+          ${d.type==='note'?'<span style="font-size:12px;font-weight:500;margin-left:8px;color:var(--color-text-secondary)">note</span>':'<span style="font-size:12px;font-weight:500;margin-left:8px;color:var(--color-text-secondary)">coin</span>'}
+        </div>
+        <span style="font-size:16px;font-weight:600;color:var(--color-text-secondary)">= $${((d.count*d.value)/100).toFixed(2)}</span>
+      </div>`;
+    }
+    html+='</div>';
+    el.innerHTML=html;
+  } else {
+    let html='<div style="display:flex;flex-direction:column;gap:16px">';
+    for(const d of items){
+      html+=`<div style="background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:10px;padding:14px 16px">
+        <p style="font-size:13px;font-weight:500;color:var(--color-text-secondary);margin-bottom:10px">${d.count} × ${d.label}</p>
+        <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center">`;
+      for(let i=0;i<d.count;i++){
+        if(d.type==='note'){
+          html+=`<div>${renderNote(d,80,46)}</div>`;
+        }else{
+          html+=`<div>${renderCoin(d)}</div>`;
+        }
+      }
+      html+=`</div></div>`;
+    }
+    html+='</div>';
+    el.innerHTML=html;
+  }
+}
+
+function toggleCountBack(){
+  countBackOpen=!countBackOpen;
+  document.getElementById('count-back-label').textContent=countBackOpen?'Hide counting steps':'Show me how to count it';
+  const el=document.getElementById('count-back');
+  el.style.display=countBackOpen?'block':'none';
+  if(countBackOpen){
+    const pRaw=parseFloat(document.getElementById('price').value)||0;
+    const hRaw=parseFloat(document.getElementById('handed').value)||0;
+    const pCents=Math.round(pRaw*100);
+    const hCents=Math.round(hRaw*100);
+    const rounded=swedishRound(pCents);
+    renderCountBack(rounded,hCents);
+  }
+}
+
+function renderCountBack(fromCents,toCents){
+  const el=document.getElementById('count-back');
+  if(!countBackOpen)return;
+  let steps=[];
+  let cur=fromCents;
+  steps.push({text:`Start at <strong>$${(cur/100).toFixed(2)}</strong> — that's the price you need to cover.`,icon:'🏷️'});
+
+  const denoms=DENOMINATIONS.filter(d=>d.value<=5000);
+  let rem=toCents-cur;
+  for(const d of DENOMINATIONS){
+    while(rem>=d.value){
+      cur+=d.value;rem-=d.value;
+      steps.push({text:`Hand over a <strong>${d.label}${d.type==='note'?' note':' coin'}</strong> → now at <strong>$${(cur/100).toFixed(2)}</strong>`,icon:d.type==='note'?'💵':'🪙'});
+    }
+  }
+  steps.push({text:`You've reached <strong>$${(toCents/100).toFixed(2)}</strong> — that's what was handed over!`,icon:'✅'});
+
+  let html=`<h3 style="font-size:15px;font-weight:600;margin-bottom:14px;display:flex;align-items:center;gap:6px"><span>🧮</span> How to count the change</h3>
+  <div style="display:flex;flex-direction:column;gap:0">`;
+  steps.forEach((s,i)=>{
+    const last=i===steps.length-1;
+    html+=`<div style="display:flex;gap:12px;padding:10px 0;${!last?'border-bottom:0.5px solid var(--color-border-tertiary)':''}">
+      <span style="font-size:20px;min-width:28px">${s.icon}</span>
+      <p style="font-size:15px;line-height:1.6;color:var(--color-text-primary)">${s.text}</p>
+    </div>`;
+  });
+  html+='</div>';
+  el.innerHTML=html;
+}
+
+window.calculate=calculate;
+window.setMode=setMode;
+window.toggleCountBack=toggleCountBack;
+document.getElementById('error-box').style.display='none';
+</script>
