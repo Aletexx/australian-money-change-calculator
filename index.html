@@ -536,30 +536,35 @@
     return items;
   }
 
-  // ── SVG Renderers ──────────────────────────────────────
-  function renderCoinSVG(d, size) {
-    const s = size || d.size;
-    if (d.type === 'coin50c') {
-      const cx = s / 2, cy = s / 2, r = s * 0.44;
-      const pts = [];
-      for (let i = 0; i < 6; i++) {
-        const a = (i * 60 - 90) * Math.PI / 180;
-        pts.push((cx + r * Math.cos(a)).toFixed(2) + ',' + (cy + r * Math.sin(a)).toFixed(2));
-      }
-      return `<svg width="${s}" height="${s}" viewBox="0 0 ${s} ${s}" aria-hidden="true">
-        <polygon points="${pts.join(' ')}" fill="${d.color}" stroke="#999" stroke-width="1"/>
-        <text x="${cx}" y="${cy + 4}" text-anchor="middle" font-family="Lexend,sans-serif"
-          font-size="${(s * 0.22).toFixed(1)}" font-weight="600" fill="${d.textColor}">${d.label}</text>
-      </svg>`;
-    }
-    // Regular round coin
-    const c = s / 2;
-    return `<svg width="${s}" height="${s}" viewBox="0 0 ${s} ${s}" aria-hidden="true">
-      <circle cx="${c}" cy="${c}" r="${c - 1}" fill="${d.color}" stroke="#999" stroke-width="1"/>
-      <text x="${c}" y="${c + 4}" text-anchor="middle" font-family="Lexend,sans-serif"
-        font-size="${(s * 0.22).toFixed(1)}" font-weight="600" fill="${d.textColor}">${d.label}</text>
-    </svg>`;
-  }
+   // ── SVG Renderers ──────────────────────────────────────
+  function renderCoinSVG(d, size) {
+    const s = size || d.size;
+    // --- UPDATED QA BUG FIX: Increasing text size inside coins ---
+    // The previous value was s * 0.22. We are changing it to s * 0.45.
+    const coinFontSize = (s * 0.45).toFixed(1);
+    const coinFontWeight = "700"; // making it bolder
+
+    if (d.type === 'coin50c') {
+      const cx = s / 2, cy = s / 2, r = s * 0.44;
+      const pts = [];
+      for (let i = 0; i < 6; i++) {
+        const a = (i * 60 - 90) * Math.PI / 180;
+        pts.push((cx + r * Math.cos(a)).toFixed(2) + ',' + (cy + r * Math.sin(a)).toFixed(2));
+      }
+      return `<svg width="${s}" height="${s}" viewBox="0 0 ${s} ${s}" aria-hidden="true">
+        <polygon points="${pts.join(' ')}" fill="${d.color}" stroke="#999" stroke-width="1"/>
+        <text x="${cx}" y="${cy + (s * 0.16)}" text-anchor="middle" font-family="Lexend,sans-serif"
+          font-size="${coinFontSize}" font-weight="${coinFontWeight}" fill="${d.textColor}">${d.label}</text>
+      </svg>`;
+    }
+    // Regular round coin
+    const c = s / 2;
+    return `<svg width="${s}" height="${s}" viewBox="0 0 ${s} ${s}" aria-hidden="true">
+      <circle cx="${c}" cy="${c}" r="${c - 1}" fill="${d.color}" stroke="#999" stroke-width="1"/>
+      <text x="${c}" y="${c + (s * 0.16)}" text-anchor="middle" font-family="Lexend,sans-serif"
+        font-size="${coinFontSize}" font-weight="${coinFontWeight}" fill="${d.textColor}">${d.label}</text>
+    </svg>`;
+  }
 
   function renderNoteSVG(d, w, h) {
     return `<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" style="border-radius:4px" aria-hidden="true">
