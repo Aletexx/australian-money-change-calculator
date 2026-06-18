@@ -16,10 +16,10 @@
 
     :root {
       --bg-primary: #ffffff;
-      --bg-secondary: #f5f5f3;
-      --bg-tertiary: #eeecea;
+      --bg-secondary: #eaf4fa;
+      --bg-tertiary: #dceefa;
       --text-primary: #1a1a18;
-      --text-secondary: #6b6b67;
+      --text-secondary: #5d6b73;
       --border-light: rgba(0,0,0,0.12);
       --border-medium: rgba(0,0,0,0.22);
       --success-bg: #e6f9f0;
@@ -37,11 +37,11 @@
 
     @media (prefers-color-scheme: dark) {
       :root {
-        --bg-primary: #1e1e1c;
-        --bg-secondary: #2a2a27;
-        --bg-tertiary: #333330;
+        --bg-primary: #1e2226;
+        --bg-secondary: #242b31;
+        --bg-tertiary: #182026;
         --text-primary: #f0ede8;
-        --text-secondary: #999990;
+        --text-secondary: #9aa6ad;
         --border-light: rgba(255,255,255,0.1);
         --border-medium: rgba(255,255,255,0.18);
         --success-bg: #0d3326;
@@ -249,6 +249,36 @@
       color: var(--text-secondary);
     }
 
+    /* ── Option toggle (different ways to give the change) ── */
+    #options-section { margin-bottom: 1.5rem; }
+    .option-toggle {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .option-btn {
+      font-family: 'Lexend', sans-serif;
+      font-size: 14px;
+      font-weight: 600;
+      padding: 10px 16px;
+      border-radius: var(--radius-md);
+      cursor: pointer;
+      transition: background 0.15s, color 0.15s, border-color 0.15s;
+    }
+    .option-btn.active {
+      background: var(--success-accent);
+      border: 1.5px solid var(--success-accent);
+      color: #ffffff;
+    }
+    .option-btn.inactive {
+      background: var(--bg-primary);
+      border: 1.5px solid var(--border-medium);
+      color: var(--text-primary);
+    }
+    .option-btn.inactive:hover {
+      background: var(--bg-secondary);
+    }
+
     /* ── Breakdown list ── */
     #breakdown { margin-bottom: 1.5rem; }
     .breakdown-list { display: flex; flex-direction: column; gap: 8px; }
@@ -384,7 +414,7 @@
       </div>
       <div class="input-row">
         <span class="dollar-sign">$</span>
-        <input id="price" class="money-input" type="number" min="0" step="0.01" placeholder="0.00" oninput="calculate()">
+        <input id="price" class="money-input" type="number" min="0" max="1000" step="0.01" placeholder="0.00" oninput="calculate()">
       </div>
     </div>
     <div class="card">
@@ -393,7 +423,7 @@
       </div>
       <div class="input-row">
         <span class="dollar-sign">$</span>
-        <input id="handed" class="money-input" type="number" min="0" step="0.01" placeholder="0.00" oninput="calculate()">
+        <input id="handed" class="money-input" type="number" min="0" max="1000" step="0.01" placeholder="0.00" oninput="calculate()">
       </div>
     </div>
   </div>
@@ -412,9 +442,16 @@
 
     <div class="change-hero">
       <div class="change-hero-label">
-        <span>&#x1F3AF;</span> Give this change back
+        <span id="change-hero-icon">&#x1F3AF;</span> <span id="change-hero-label-text">Give this change back</span>
       </div>
       <div id="change-amount" class="change-hero-amount"></div>
+    </div>
+
+    <div id="options-section">
+      <div class="breakdown-title" style="margin-bottom:10px;">
+        <span>&#x1F504;</span> Choose how to give it
+      </div>
+      <div id="option-toggle" class="option-toggle"></div>
     </div>
 
     <div class="breakdown-header">
@@ -447,6 +484,8 @@
   // ── State ──────────────────────────────────────────────
   let mode = 'summary';
   let countBackOpen = false;
+  let currentOptions = [];
+  let selectedOptionIndex = 0;
 
   // ── Denominations ──────────────────────────────────────
   const DENOMINATIONS = [
@@ -463,6 +502,8 @@
     { value:     5, label: '5c',   type: 'coin',   size: 24,  color: '#A9A9A9', textColor: '#fff' },
   ];
 
+  const MAX_AMOUNT = 1000; // dollars
+
   // ── Swedish (Australian) Rounding ──────────────────────
   function swedishRound(cents) {
     const r = cents % 5;
@@ -470,10 +511,35 @@
     return cents + (5 - r);
   }
 
+  // ── Input sanitising: max $1000, max 2 decimals ────────
+  function sanitiseMoneyInput(el) {
+    const raw = el.value;
+    if (raw === '') return;
+
+    // Keep only digits before the decimal, and at most 2 digits after it
+    const match = raw.match(/^(\d*)(\.(\d{0,2})?)?/);
+    const cleaned = match ? match[1] + (match[2] ? '.' + (match[3] || '') : '') : raw;
+
+    const num = parseFloat(cleaned);
+    if (isNaN(num)) { el.value = ''; return; }
+    if (num < 0) { el.value = '0'; return; }
+    if (num > MAX_AMOUNT) { el.value = String(MAX_AMOUNT); return; }
+
+    // Only touch the field if something actually needed trimming, so we
+    // don't fight the user's cursor position while they're typing.
+    if (cleaned !== raw) el.value = cleaned;
+  }
+
   // ── Main calculate ─────────────────────────────────────
   function calculate() {
-    const pRaw   = parseFloat(document.getElementById('price').value)  || 0;
-    const hRaw   = parseFloat(document.getElementById('handed').value) || 0;
+    const priceEl = document.getElementById('price');
+    const handedEl = document.getElementById('handed');
+
+    sanitiseMoneyInput(priceEl);
+    sanitiseMoneyInput(handedEl);
+
+    const pRaw   = parseFloat(priceEl.value)  || 0;
+    const hRaw   = parseFloat(handedEl.value) || 0;
     const pCents = Math.round(pRaw * 100);
     const hCents = Math.round(hRaw * 100);
     const rounded = swedishRound(pCents);
@@ -482,7 +548,6 @@
     const noteEl  = document.getElementById('rounded-note');
     const errEl   = document.getElementById('error-box');
     const resEl   = document.getElementById('result-section');
-    const handedEl = document.getElementById('handed');
 
     if (pRaw <= 0) {
       noteEl.style.display = 'none';
@@ -517,54 +582,136 @@
     resEl.style.display = 'block';
     document.getElementById('change-amount').textContent = '$' + (change / 100).toFixed(2);
 
-    const breakdown = getBreakdown(change);
-    renderBreakdown(breakdown);
-    if (countBackOpen) renderCountBack(rounded, hCents);
+    // Update the hero message depending on whether change is owed
+    const heroIcon = document.getElementById('change-hero-icon');
+    const heroText = document.getElementById('change-hero-label-text');
+    if (change === 0) {
+      heroIcon.innerHTML = '&#x2705;';
+      heroText.textContent = 'No change needed';
+    } else {
+      heroIcon.innerHTML = '&#x1F3AF;';
+      heroText.textContent = 'Give this change back';
+    }
+
+    selectedOptionIndex = 0;
+    currentOptions = getBreakdownOptions(change);
+    renderOptionToggle();
+    renderBreakdown(currentOptions[selectedOptionIndex] ? currentOptions[selectedOptionIndex].items : []);
+    if (countBackOpen) renderCountBack();
   }
 
-  // ── Build denomination breakdown ───────────────────────
-  function getBreakdown(cents) {
+  // ── Build a single denomination breakdown (greedy) ─────
+  // setDenoms: optional subset/order of DENOMINATIONS to use
+  function greedyBreakdown(cents, setDenoms) {
+    const denoms = setDenoms || DENOMINATIONS;
     const items = [];
     let rem = cents;
-    for (const d of DENOMINATIONS) {
+    for (const d of denoms) {
       if (rem >= d.value) {
         const count = Math.floor(rem / d.value);
         items.push({ ...d, count });
         rem -= count * d.value;
       }
     }
+    if (rem > 0) return null; // couldn't make exact change with this denom set
     return items;
   }
 
+  function totalPieces(items) {
+    return items.reduce((sum, d) => sum + d.count, 0);
+  }
+
+  function serialiseItems(items) {
+    return items.map(d => d.value + 'x' + d.count).join(',');
+  }
+
+  // ── Build multiple "ways to give the change" options ───
+  // Option 1 is always the fewest-pieces / easiest combination.
+  // Further options simulate a cashier missing certain notes/coins,
+  // giving genuinely different (but still valid) combinations.
+  function getBreakdownOptions(cents) {
+    if (cents <= 0) return [];
+
+    const results = [];
+    const seen = new Set();
+
+    function addResult(items, label) {
+      if (!items) return;
+      const key = serialiseItems(items);
+      if (seen.has(key)) return;
+      seen.add(key);
+      results.push({ items, label, pieces: totalPieces(items) });
+    }
+
+    // Option 1: the easiest way (fewest pieces, full denomination set)
+    const easiest = greedyBreakdown(cents);
+    addResult(easiest, 'Easiest');
+
+    // Generate alternates by removing one denomination at a time from
+    // the full set (simulating "what if that note/coin isn't available")
+    for (let i = 0; i < DENOMINATIONS.length; i++) {
+      const reduced = DENOMINATIONS.filter((d, idx) => idx !== i);
+      const alt = greedyBreakdown(cents, reduced);
+      addResult(alt, 'Alternative');
+      if (results.length >= 6) break;
+    }
+
+    // If we still don't have at least 3 options, try removing pairs of
+    // denominations to widen the search for genuinely different combos.
+    if (results.length < 3) {
+      for (let i = 0; i < DENOMINATIONS.length && results.length < 3; i++) {
+        for (let j = i + 1; j < DENOMINATIONS.length && results.length < 3; j++) {
+          const reduced = DENOMINATIONS.filter((d, idx) => idx !== i && idx !== j);
+          const alt = greedyBreakdown(cents, reduced);
+          addResult(alt, 'Alternative');
+        }
+      }
+    }
+
+    // Sort so the easiest (fewest pieces) is always first, keep stable
+    // order otherwise so results don't jump around unpredictably.
+    results.sort((a, b) => a.pieces - b.pieces);
+    // Make sure the original "easiest" stays pinned at position 0.
+    const easiestKey = easiest ? serialiseItems(easiest) : null;
+    const easiestIdx = results.findIndex(r => serialiseItems(r.items) === easiestKey);
+    if (easiestIdx > 0) {
+      const [e] = results.splice(easiestIdx, 1);
+      results.unshift(e);
+    }
+
+    // Cap to a sensible number of choices for the UI
+    return results.slice(0, 4);
+  }
+
    // ── SVG Renderers ──────────────────────────────────────
-  function renderCoinSVG(d, size) {
-    const s = size || d.size;
+  function renderCoinSVG(d, size) {
+    const s = size || d.size;
     // --- UPDATED QA BUG FIX: Increasing text size inside coins ---
     // The previous value was s * 0.22. We are changing it to s * 0.45.
     const coinFontSize = (s * 0.45).toFixed(1);
     const coinFontWeight = "700"; // making it bolder
 
-    if (d.type === 'coin50c') {
-      const cx = s / 2, cy = s / 2, r = s * 0.44;
-      const pts = [];
-      for (let i = 0; i < 6; i++) {
-        const a = (i * 60 - 90) * Math.PI / 180;
-        pts.push((cx + r * Math.cos(a)).toFixed(2) + ',' + (cy + r * Math.sin(a)).toFixed(2));
-      }
-      return `<svg width="${s}" height="${s}" viewBox="0 0 ${s} ${s}" aria-hidden="true">
-        <polygon points="${pts.join(' ')}" fill="${d.color}" stroke="#999" stroke-width="1"/>
-        <text x="${cx}" y="${cy + (s * 0.16)}" text-anchor="middle" font-family="Lexend,sans-serif"
-          font-size="${coinFontSize}" font-weight="${coinFontWeight}" fill="${d.textColor}">${d.label}</text>
-      </svg>`;
-    }
-    // Regular round coin
-    const c = s / 2;
-    return `<svg width="${s}" height="${s}" viewBox="0 0 ${s} ${s}" aria-hidden="true">
-      <circle cx="${c}" cy="${c}" r="${c - 1}" fill="${d.color}" stroke="#999" stroke-width="1"/>
-      <text x="${c}" y="${c + (s * 0.16)}" text-anchor="middle" font-family="Lexend,sans-serif"
-        font-size="${coinFontSize}" font-weight="${coinFontWeight}" fill="${d.textColor}">${d.label}</text>
-    </svg>`;
-  }
+    if (d.type === 'coin50c') {
+      const cx = s / 2, cy = s / 2, r = s * 0.44;
+      const pts = [];
+      for (let i = 0; i < 6; i++) {
+        const a = (i * 60 - 90) * Math.PI / 180;
+        pts.push((cx + r * Math.cos(a)).toFixed(2) + ',' + (cy + r * Math.sin(a)).toFixed(2));
+      }
+      return `<svg width="${s}" height="${s}" viewBox="0 0 ${s} ${s}" aria-hidden="true">
+        <polygon points="${pts.join(' ')}" fill="${d.color}" stroke="#999" stroke-width="1"/>
+        <text x="${cx}" y="${cy + (s * 0.16)}" text-anchor="middle" font-family="Lexend,sans-serif"
+          font-size="${coinFontSize}" font-weight="${coinFontWeight}" fill="${d.textColor}">${d.label}</text>
+      </svg>`;
+    }
+    // Regular round coin
+    const c = s / 2;
+    return `<svg width="${s}" height="${s}" viewBox="0 0 ${s} ${s}" aria-hidden="true">
+      <circle cx="${c}" cy="${c}" r="${c - 1}" fill="${d.color}" stroke="#999" stroke-width="1"/>
+      <text x="${c}" y="${c + (s * 0.16)}" text-anchor="middle" font-family="Lexend,sans-serif"
+        font-size="${coinFontSize}" font-weight="${coinFontWeight}" fill="${d.textColor}">${d.label}</text>
+    </svg>`;
+  }
 
   function renderNoteSVG(d, w, h) {
     return `<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" style="border-radius:4px" aria-hidden="true">
@@ -574,6 +721,36 @@
       <text x="${w / 2}" y="${h / 2 + 6}" text-anchor="middle" font-family="Lexend,sans-serif"
         font-size="${(h * 0.38).toFixed(1)}" font-weight="700" fill="${d.textColor}">${d.label}</text>
     </svg>`;
+  }
+
+  // ── Render option toggle (which "way" to give the change) ──
+  function renderOptionToggle() {
+    const el = document.getElementById('option-toggle');
+    const section = document.getElementById('options-section');
+
+    if (currentOptions.length <= 1) {
+      section.style.display = 'none';
+      el.innerHTML = '';
+      return;
+    }
+
+    section.style.display = 'block';
+    let html = '';
+    currentOptions.forEach((opt, idx) => {
+      const active = idx === selectedOptionIndex ? 'active' : 'inactive';
+      const badge = idx === 0 ? ' &#x2B50;' : '';
+      html += `<button class="option-btn ${active}" onclick="selectOption(${idx})">
+        Option ${idx + 1}${badge}
+      </button>`;
+    });
+    el.innerHTML = html;
+  }
+
+  function selectOption(idx) {
+    selectedOptionIndex = idx;
+    renderOptionToggle();
+    renderBreakdown(currentOptions[idx].items);
+    if (countBackOpen) renderCountBack();
   }
 
   // ── Render breakdown panel ─────────────────────────────
@@ -626,8 +803,7 @@
     mode = m;
     document.getElementById('btn-summary').className = 'mode-btn ' + (m === 'summary' ? 'active' : 'inactive');
     document.getElementById('btn-visual').className  = 'mode-btn ' + (m === 'visual'  ? 'active' : 'inactive');
-    const pRaw = parseFloat(document.getElementById('price').value) || 0;
-    if (pRaw > 0) calculate();
+    if (currentOptions.length) renderBreakdown(currentOptions[selectedOptionIndex].items);
   }
 
   // ── Count back toggle ──────────────────────────────────
@@ -637,20 +813,24 @@
       countBackOpen ? 'Hide counting steps' : 'Show me how to count it';
     const el = document.getElementById('count-back');
     el.style.display = countBackOpen ? 'block' : 'none';
-    if (countBackOpen) {
-      const pRaw   = parseFloat(document.getElementById('price').value)  || 0;
-      const hRaw   = parseFloat(document.getElementById('handed').value) || 0;
-      const pCents = Math.round(pRaw * 100);
-      const hCents = Math.round(hRaw * 100);
-      const rounded = swedishRound(pCents);
-      renderCountBack(rounded, hCents);
-    }
+    if (countBackOpen) renderCountBack();
   }
 
-  // ── Count back renderer ────────────────────────────────
-  function renderCountBack(fromCents, toCents) {
+  // ── Count back renderer ─────────────────────────────────
+  // Walks through the currently selected breakdown option, so the
+  // counting steps always match what's shown above.
+  function renderCountBack() {
     const el = document.getElementById('count-back');
     if (!countBackOpen) return;
+
+    const priceEl  = document.getElementById('price');
+    const handedEl = document.getElementById('handed');
+    const pCents = Math.round((parseFloat(priceEl.value) || 0) * 100);
+    const hCents = Math.round((parseFloat(handedEl.value) || 0) * 100);
+    const fromCents = swedishRound(pCents);
+    const toCents = hCents;
+
+    const items = currentOptions.length ? currentOptions[selectedOptionIndex].items : [];
 
     const steps = [];
     let cur = fromCents;
@@ -659,12 +839,10 @@
       text: `Start at <strong>$${(cur / 100).toFixed(2)}</strong> &mdash; that's the price to cover.`
     });
 
-    let rem = toCents - cur;
-    for (const d of DENOMINATIONS) {
-      while (rem >= d.value) {
+    for (const d of items) {
+      const typeWord = d.type === 'note' ? 'note' : 'coin';
+      for (let i = 0; i < d.count; i++) {
         cur += d.value;
-        rem -= d.value;
-        const typeWord = d.type === 'note' ? 'note' : 'coin';
         steps.push({
           icon: d.type === 'note' ? '&#x1F4B5;' : '&#x1FA99;',
           text: `Hand over a <strong>${d.label} ${typeWord}</strong> &rarr; now at <strong>$${(cur / 100).toFixed(2)}</strong>`
